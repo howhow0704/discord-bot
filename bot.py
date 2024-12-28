@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 # 設置日誌
 current_time = datetime.now().strftime('%Y_%m_%d_%H_%M')
-log_folder = r'C:\Users\jtjty\Desktop\mod\DC BOT\MC BOT\log' #LOG save file
+log_folder = r'C:\Users\jtjty\Desktop\mod\DC BOT\MC BOT\log'
 os.makedirs(log_folder, exist_ok=True)
 log_file = os.path.join(log_folder, f'{current_time}.log')
 
@@ -411,33 +411,27 @@ class MusicControls(discord.ui.View):
             self.pause_resume_button.label = '繼續'
             self.pause_resume_button.emoji = '▶️'
             self.pause_resume_button.style = discord.ButtonStyle.success
-            await interaction.response.send_message("⏸️ 已暫停播放！", ephemeral=True)
         elif self.player.voice_client.is_paused():
             self.player.resume()
             self.pause_resume_button.label = '暫停'
             self.pause_resume_button.emoji = '⏸️'
             self.pause_resume_button.style = discord.ButtonStyle.danger
-            await interaction.response.send_message("▶️ 已恢復播放！", ephemeral=True)
 
-        # 更新嵌入訊息
-        message = interaction.message
-        if message.embeds:
-            embed = message.embeds[0]
-            if self.player.voice_client.is_paused():
-                embed.title = "🎶 已暫停"
-                embed.color = discord.Color.orange()  # 更改顏色以反映暫停狀態
-            else:
-                embed.title = "🎶 正在播放"
-                embed.color = discord.Color.green()
-            try:
-                await self.player.control_message.edit(embed=embed, view=self.player.control_view)
-            except AttributeError as e:
-                logger.error(f"無法編輯控制訊息：{e}")
+        # 更新嵌入訊息和按鈕狀態
+        embed = interaction.message.embeds[0]
+        if self.player.voice_client.is_paused():
+            embed.title = "🎶 已暫停"
+            embed.color = discord.Color.orange()
+        else:
+            embed.title = "🎶 正在播放"
+            embed.color = discord.Color.green()
 
-    async def skip(self, interaction: discord.Interaction):
-        if self.player.voice_client.is_playing():
-            self.player.skip()
-            await interaction.response.send_message("⏭️ 已跳過當前歌曲！", ephemeral=True)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+        async def skip(self, interaction: discord.Interaction):
+            if self.player.voice_client.is_playing():
+                self.player.skip()
+                await interaction.response.send_message("⏭️ 已跳過當前歌曲！", ephemeral=True)
 
     async def toggle_loop(self, interaction: discord.Interaction):
         self.player.loop_flag = not self.player.loop_flag
@@ -448,26 +442,19 @@ class MusicControls(discord.ui.View):
             self.loop_button.style = discord.ButtonStyle.danger
             status = '停用'
 
-        await interaction.response.send_message(f"🔁 循環播放已 {status}！", ephemeral=True)
+        # 更新嵌入訊息
+        embed = interaction.message.embeds[0]
+        for idx, field in enumerate(embed.fields):
+            if field.name == "循環狀態":
+                embed.set_field_at(
+                    index=idx,
+                    name="循環狀態",
+                    value="🔁 循環已啟用" if self.player.loop_flag else "🔁 循環已停用",
+                    inline=False
+                )
+                break
 
-        # 更新嵌入訊息中的循環狀態
-        message = interaction.message
-        if message.embeds:
-            embed = message.embeds[0]
-            # 更新循環狀態字段
-            for idx, field in enumerate(embed.fields):
-                if field.name == "循環狀態":
-                    embed.set_field_at(
-                        index=idx,
-                        name="循環狀態",
-                        value="🔁 循環已啟用" if self.player.loop_flag else "🔁 循環已停用",
-                        inline=False
-                    )
-                    break
-            try:
-                await self.player.control_message.edit(embed=embed, view=self.player.control_view)
-            except AttributeError as e:
-                logger.error(f"無法編輯控制訊息：{e}")
+        await interaction.response.edit_message(embed=embed, view=self)
 
     async def view_queue(self, interaction: discord.Interaction):
         if not self.player.queue.empty():
