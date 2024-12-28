@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 # 設置日誌
 current_time = datetime.now().strftime('%Y_%m_%d_%H_%M')
-log_folder = r'C:\Users\jtjty\Desktop\mod\DC BOT\MC BOT\log'
+log_folder = r'C:\Users\jtjty\Desktop\mod\DC BOT\MC BOT\log' #LOG save file
 os.makedirs(log_folder, exist_ok=True)
 log_file = os.path.join(log_folder, f'{current_time}.log')
 
